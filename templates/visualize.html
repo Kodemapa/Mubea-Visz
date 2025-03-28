@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Visualization</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --column-spacing: 60px;
+            --visible-columns: 10;
+            --fixed-columns-width: 400px;
+            --column-width: 240px;
+            --reference-value-bg: #FFFBCA;
+            --actual-value-bg: #AEEA94;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            overflow-x: hidden;
+        }
+        
+        .container-fluid {
+            max-width: 2100px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+            width: 100%;
+        }
+        
+        .card-header {
+            background-color: #198754;
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 15px 20px;
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        .fw-bold {
+            font-weight: 900 !important;
+        }
+        
+        .table-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .table-container {
+            position: relative;
+            overflow-x: auto;
+            border-radius: 4px;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            background-color: white;
+            margin-bottom: 20px;
+            width: calc(var(--fixed-columns-width) + (var(--visible-columns) - 3) * var(--column-width));
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+        }
+        
+        .table-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        
+        .table-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .table-container::-webkit-scrollbar-thumb {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+        
+        .table {
+            width: 100%;
+            margin-bottom: 0;
+            border-spacing: 0;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #f8f9fa;
+        }
+        
+        .sticky-col {
+            position: sticky;
+            left: 0;
+            z-index: 20;
+            background-color: white !important;
+            width: 100px;
+            min-width: 100px;
+            max-width: 100px;
+            padding: 0.75rem 20px !important;
+        }
+        
+        .second-sticky-col {
+            position: sticky;
+            left: 100px;
+            z-index: 19;
+            background-color: white !important;
+            width: 140px;
+            min-width: 140px;
+            max-width: 140px;
+            padding: 0.75rem 20px !important;
+        }
+        
+        .third-sticky-col {
+            position: sticky;
+            left: 240px;
+            z-index: 18;
+            width: 160px;
+            min-width: 160px;
+            max-width: 160px;
+            padding: 0.75rem 20px !important;
+        }
+        
+        .reference-value {
+            background-color: var(--reference-value-bg) !important;
+        }
+        
+        .actual-value {
+            background-color: var(--actual-value-bg) !important;
+        }
+        
+        .bending-col {
+            width: var(--column-width);
+            min-width: var(--column-width);
+            max-width: var(--column-width);
+            padding: 8px var(--column-spacing) !important;
+        }
+        
+        th, td {
+            text-align: center;
+            vertical-align: middle;
+            white-space: nowrap;
+            padding: 0.75rem var(--column-spacing) !important;
+            border: 1px solid #dee2e6;
+        }
+        
+        tr:not(:last-child) td {
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        tr:not(:first-child) td {
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .selected-row {
+            outline: 2px solid #0d6efd !important;
+            outline-offset: -2px;
+        }
+        
+        .pagination .page-item.active .page-link {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        
+        .graph-container {
+            height: 500px;
+            transition: height 0.3s ease;
+            width: 100%;
+        }
+        
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 0.375rem;
+        }
+        
+        .nav-btn {
+            padding: 10px 30px;
+            border-radius: 30px;
+            font-weight: bold;
+            margin: 0 10px;
+        }
+        
+        .page-title {
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            th, td {
+                padding: 0.5rem var(--column-spacing) !important;
+            }
+            
+            .sticky-col {
+                width: 80px;
+                min-width: 80px;
+                max-width: 80px;
+            }
+            
+            .second-sticky-col {
+                left: 80px;
+                width: 100px;
+                min-width: 100px;
+                max-width: 100px;
+            }
+            
+            .third-sticky-col {
+                left: 180px;
+                width: 120px;
+                min-width: 120px;
+                max-width: 120px;
+            }
+            
+            .bending-col {
+                width: 160px;
+                min-width: 160px;
+                max-width: 160px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <div class="row mb-4 w-100">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title mb-0 text-center">Your visualization</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <a href="/select_database" class="btn btn-outline-secondary nav-btn">
+                                <i class="bi bi-arrow-left"></i> BACK
+                            </a>
+                        </div>
+                        
+                        <div class="alert alert-info" role="alert">
+                            <i class="bi bi-info-circle-fill me-2"></i>
+                            Scroll horizontally to view more columns.
+                        </div>
+                        
+                        <div class="btn-toolbar mb-3" role="toolbar">
+                            <div class="btn-group me-2" role="group">
+                                <button class="btn btn-outline-secondary" onclick="selectPrevious()">
+                                    <i class="bi bi-arrow-left"></i> Previous
+                                </button>
+                                <button class="btn btn-outline-primary" onclick="selectNext()">
+                                    Next <i class="bi bi-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="table-wrapper">
+                            <div class="table-container" id="tableContainer">
+                                <table class="table table-bordered">
+                                    <thead class="sticky-header">
+                                        <tr id="table-header">
+                                            <!-- Table headers will be inserted here by JavaScript -->
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-body">
+                                        <!-- Table rows will be inserted here by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <nav>
+                                <ul class="pagination justify-content-center" id="pagination">
+                                    <!-- Pagination will be inserted here by JavaScript -->
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row w-100">
+            <div class="col-12">
+                <div class="card" id="graphCard" style="display: none;">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0" id="graph-title">Data Graph</h4>
+                        <button type="button" class="btn btn-sm btn-light" onclick="toggleGraphSize()">
+                            <i class="bi bi-arrows-angle-expand" id="expandIcon"></i>
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="graph-container" id="graphContainer">
+                            <iframe id="graph-frame"></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4 w-100">
+            <div class="col-12 text-center">
+                <a href="/select_database" class="btn btn-outline-secondary nav-btn">
+                    <i class="bi bi-arrow-left"></i> BACK
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        const selectedFile = "{{ selected_file }}";
+        const selectedDB = "{{ selected_db }}";
+        let currentPage = 1;
+        const pageSize = 10;
+        let totalPages = 1;
+        let tableData = null;
+        
+        // Helper function to format numbers
+        function formatNumber(num) {
+            // Convert to number in case it's a string
+            num = parseFloat(num);
+            // If it's an integer, return it as an integer
+            if (Number.isInteger(num)) {
+                return num.toString();
+            }
+            // Otherwise, remove trailing zeros
+            return num.toString().replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+        }
+        
+        // Load data when page loads
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Fetch data from server
+                const response = await fetch('/get_data');
+                tableData = await response.json();
+                
+                if (tableData.error) {
+                    alert('Error loading data: ' + tableData.error);
+                    return;
+                }
+                
+                console.log("Data loaded:", tableData); // Debug log
+                
+                // Calculate total pages
+                if (selectedDB === 'blank_info') {
+                    totalPages = Math.ceil(tableData.blank_info.length / pageSize);
+                } else {
+                    totalPages = Math.ceil(tableData.blank_info.length / pageSize);
+                }
+                
+                // Render table
+                renderTable();
+                
+                // Render pagination
+                renderPagination();
+                
+                // Select first row by default
+                if (tableData.blank_info && tableData.blank_info.length > 0) {
+                    selectRow(0);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to load data. Please try again.');
+            }
+        });
+        
+        // Render table based on selected database
+        function renderTable() {
+            const headerRow = document.getElementById('table-header');
+            const tableBody = document.getElementById('table-body');
+            
+            // Clear existing content
+            headerRow.innerHTML = '';
+            tableBody.innerHTML = '';
+            
+            console.log("Rendering table for DB:", selectedDB); // Debug log
+            
+            // Add headers based on selected database
+            if (selectedDB === 'blank_info') {
+                // For blank_info, just show index and value
+                headerRow.innerHTML = `
+                    <th class="sticky-col">Select</th>
+                    <th class="second-sticky-col">Index</th>
+                    <th class="third-sticky-col">Blank Info Value</th>
+                `;
+                
+                // Calculate start and end indices for current page
+                const startIdx = (currentPage - 1) * pageSize;
+                const endIdx = Math.min(startIdx + pageSize, tableData.blank_info.length);
+                
+                // Add rows
+                for (let i = startIdx; i < endIdx; i++) {
+                    const row = document.createElement('tr');
+                    row.id = `row-${i}`;
+                    row.className = 'main-row';
+                    row.innerHTML = `
+                        <td class="sticky-col">
+                            <input class="form-check-input" type="radio" name="select_row" id="radio-${i}" value="${i}">
+                        </td>
+                        <td class="second-sticky-col">${i}</td>
+                        <td class="third-sticky-col">${formatNumber(tableData.blank_info[i])}</td>
+                    `;
+                    tableBody.appendChild(row);
+                }
+            } else {
+                // For other databases, show reference and actual values
+                headerRow.innerHTML = `
+                    <th class="sticky-col">Select</th>
+                    <th class="second-sticky-col">Blank Info</th>
+                    <th class="third-sticky-col">Screwdown</th>
+                `;
+                
+                // Add column headers for data points
+                for (let i = 0; i < 41; i++) {
+                    headerRow.innerHTML += `<th class="bending-col">SD ${i+1}</th>`;
+                }
+                
+                // Calculate start and end indices for current page
+                const startIdx = (currentPage - 1) * pageSize;
+                const endIdx = Math.min(startIdx + pageSize, tableData.blank_info.length);
+                
+                console.log(`Adding rows from ${startIdx} to ${endIdx}`); // Debug log
+                
+                // Add rows
+                for (let i = startIdx; i < endIdx; i++) {
+                    // Reference row
+                    const refRow = document.createElement('tr');
+                    refRow.id = `row-${i}-ref`;
+                    refRow.className = 'main-row';
+                    refRow.innerHTML = `
+                        <td rowspan="2" class="sticky-col align-middle">
+                            <input class="form-check-input" type="radio" name="select_row" id="radio-${i}" value="${i}">
+                        </td>
+                        <td rowspan="2" class="second-sticky-col align-middle">${formatNumber(tableData.blank_info[i])}</td>
+                        <td class="third-sticky-col fw-bold">Reference:</td>
+                    `;
+                    
+                    // Add reference values
+                    for (let j = 0; j < 41; j++) {
+                        if (j < tableData.ref_x.length) {
+                            const x = tableData.ref_x[j];
+                            const isMidpoint = tableData.is_midpoint[j];
+                            let cellValue;
+                            
+                            if (isMidpoint) {
+                                cellValue = `(${formatNumber(x)}, )`;
+                            } else {
+                                const z = tableData.ref_z[j];
+                                cellValue = `(${formatNumber(x)}, ${formatNumber(z)})`;
+                            }
+                            
+                            refRow.innerHTML += `<td class="bending-col reference-value">${cellValue}</td>`;
+                        } else {
+                            refRow.innerHTML += `<td class="bending-col reference-value">(0, 0)</td>`;
+                        }
+                    }
+                    
+                    tableBody.appendChild(refRow);
+                    
+                    // Actual row
+                    const actRow = document.createElement('tr');
+                    actRow.id = `row-${i}-act`;
+                    actRow.className = 'actual-row';
+                    actRow.innerHTML = `<td class="third-sticky-col fw-bold">Actual:</td>`;
+                    
+                    // Add actual values
+                    for (let j = 0; j < 41; j++) {
+                        const x = tableData.actual_x[i][j];
+                        const z = tableData.actual_z[i][j];
+                        actRow.innerHTML += `<td class="bending-col actual-value">(${formatNumber(x)}, ${formatNumber(z)})</td>`;
+                    }
+                    
+                    tableBody.appendChild(actRow);
+                }
+            }
+            
+            // Add event listeners to rows and radio buttons
+            addRowEventListeners();
+        }
+        
+        // Render pagination controls
+        function renderPagination() {
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+            
+            // Previous button
+            if (currentPage > 1) {
+                pagination.innerHTML += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="goToPage(1); return false;">&laquo;</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="goToPage(${currentPage - 1}); return false;">&lsaquo;</a>
+                    </li>
+                `;
+            }
+            
+            // Page numbers
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, currentPage + 2);
+            
+            if (startPage > 1) {
+                pagination.innerHTML += `
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                `;
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const activeClass = i === currentPage ? 'active' : '';
+                pagination.innerHTML += `
+                    <li class="page-item ${activeClass}">
+                        <a class="page-link" href="#" onclick="goToPage(${i}); return false;">${i}</a>
+                    </li>
+                `;
+            }
+            
+            if (endPage < totalPages) {
+                pagination.innerHTML += `
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                `;
+            }
+            
+            // Next button
+            if (currentPage < totalPages) {
+                pagination.innerHTML += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="goToPage(${currentPage + 1}); return false;">&rsaquo;</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="goToPage(${totalPages}); return false;">&raquo;</a>
+                    </li>
+                `;
+            }
+        }
+        
+        // Go to specific page
+        function goToPage(page) {
+            currentPage = page;
+            renderTable();
+            renderPagination();
+        }
+        
+        // Add event listeners to rows and radio buttons
+        function addRowEventListeners() {
+            // Make rows clickable for selection
+            document.querySelectorAll('.main-row, .actual-row').forEach(row => {
+                row.addEventListener('click', function(e) {
+                    if (e.target.tagName !== 'INPUT') {
+                        const rowId = this.id.split('-')[1];
+                        const radio = document.querySelector(`input[value="${rowId}"]`);
+                        if (radio) {
+                            radio.checked = true;
+                            selectRow(rowId);
+                        }
+                    }
+                });
+            });
+            
+            // Add event listeners to radio buttons
+            document.querySelectorAll('input[name="select_row"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.checked) {
+                        selectRow(this.value);
+                    }
+                });
+            });
+        }
+        
+        // Select a row and show the graph
+        function selectRow(rowId) {
+            // Update selected row styling
+            document.querySelectorAll('tr').forEach(tr => tr.classList.remove('selected-row'));
+            
+            const refRow = document.getElementById(`row-${rowId}-ref`);
+            const actRow = document.getElementById(`row-${rowId}-act`);
+            
+            if (refRow) {
+                refRow.classList.add('selected-row');
+            }
+            if (actRow) {
+                actRow.classList.add('selected-row');
+            }
+            
+            // Show graph
+            const graphCard = document.getElementById('graphCard');
+            graphCard.style.display = 'block';
+            
+            // Update graph title
+            const label = selectedDB === 'blank_info' ? 'Blank Info' : tableData.label;
+            document.getElementById('graph-title').textContent = `${label} Graph - Row ${rowId}`;
+            
+            // Load graph in iframe
+            const iframe = document.getElementById('graph-frame');
+            iframe.src = `/plot/${rowId}`;
+            
+            // Scroll to graph on mobile
+            if (window.innerWidth < 768) {
+                graphCard.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+        
+        // Navigation functions
+        function selectPrevious() {
+            const radios = document.getElementsByName('select_row');
+            for (let i = 1; i < radios.length; i++) {
+                if (radios[i].checked) {
+                    radios[i].checked = false;
+                    radios[i - 1].checked = true;
+                    selectRow(radios[i - 1].value);
+                    radios[i - 1].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    break;
+                }
+            }
+        }
+        
+        function selectNext() {
+            const radios = document.getElementsByName('select_row');
+            for (let i = 0; i < radios.length - 1; i++) {
+                if (radios[i].checked) {
+                    radios[i].checked = false;
+                    radios[i + 1].checked = true;
+                    selectRow(radios[i + 1].value);
+                    radios[i + 1].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    break;
+                }
+            }
+        }
+        
+        // Toggle graph size
+        let isExpanded = false;
+        function toggleGraphSize() {
+            const container = document.getElementById('graphContainer');
+            const icon = document.getElementById('expandIcon');
+            
+            if (isExpanded) {
+                container.style.height = '500px';
+                icon.classList.remove('bi-arrows-angle-contract');
+                icon.classList.add('bi-arrows-angle-expand');
+            } else {
+                container.style.height = '800px';
+                icon.classList.remove('bi-arrows-angle-expand');
+                icon.classList.add('bi-arrows-angle-contract');
+            }
+            
+            isExpanded = !isExpanded;
+        }
+    </script>
+</body>
+</html>
+
